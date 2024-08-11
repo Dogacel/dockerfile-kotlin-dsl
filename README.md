@@ -10,72 +10,43 @@ This gradle plugin allows you to define your Dockerfile using Kotlin DSL inside 
 ```kotlin
 
 plugins {
-  id("io.github.dogacel:dockerfile-kotlin-dsl") version "0.0.1"
+    id("io.github.dogacel:dockerfile-kotlin-dsl") version "0.0.1"
 }
 
 // Define a root dockerfile named `Dockerfile`.
 dockerfile {
-  from("openjdk:21-jdk-slim")
-  workdir("/app")
+    from("openjdk:21-jdk-slim")
+    workdir("/app")
 
-  +"Copy the JAR file into the Docker Image"
-  copy {
-    source = "app.jar"
-    destination = "/app/app.jar"
-  }
+    +"Copy the JAR file into the Docker Image"
+    copy {
+        source = "app.jar"
+        destination = "/app/app.jar"
+    }
 
-  +"Download assets"
-  val assetPath = when (System.getenv("MODE")) {
-    "local" -> "/first_100_assets.zip"
-    "staging" -> "/compressed_assets.zip"
-    else -> "/full_assets.zip"
-  }
+    +"Download assets"
+    val assetPath = when (System.getenv("MODE")) {
+        "local" -> "/first_100_assets.zip"
+        "staging" -> "/compressed_assets.zip"
+        else -> "/full_assets.zip"
+    }
 
-  run("curl", "-o", "assets.zip", "https://example.com/" + assetPath)
-  run("unzip", "assets.zip", "-d", "/app/assets", "&&", "rm", "assets.zip")
+    run("curl", "-o", "assets.zip", "https://example.com/" + assetPath)
+    run("unzip", "assets.zip", "-d", "/app/assets", "&&", "rm", "assets.zip")
 
-  when (System.getenv("MODE")) {
-    "local" -> expose(80)
-    else -> {}
-  }
+    when (System.getenv("MODE")) {
+        "local" -> expose(80)
+        else -> {}
+    }
 
-  expose(443)
+    expose(443)
 
-  cmd("java", "-jar", "app.jar")
+    cmd("java", "-jar", "app.jar")
 }
-
-// Alternatively, you can define multiple dockerfiles with custom & default settings
-dockerfiles {
-  // Creates a dockerfile named `app.Dockerfile`
-  create("app") {
-    // Customize the path
-    path = "./dockerfiles/"
-    args {
-      "PORT" => 8000
-      "MODE" => "app"
-    }
-    // Define the dockerfile
-    dockerfile {
-      from("openjdk-21")
-      ...
-    }
-  }
-  // To create the base `Dockerfile`, use create { ... }
-  create {
-    args {
-      "PORT" => 9000
-      "MODE" => "prod"
-    }
-    // Use dockerfile definition of app
-    dockerfileFrom("app")
-  }
-}
-
 ```
 
-To create a dockerfile, run `./gradlew dockerfileGenerate`.
-
-Or alternatively, if you want to build a dockerfile directly, you can use `./gradlew dockerfileBuild --name=app`.
+To create a dockerfile, run `./gradlew dockerfileGenerate`. You can pass a `--name=Test.dockerfile` parameter to specify
+the file name. The file will be created under your project root.
 
 ## Why?
 

@@ -7,13 +7,15 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 @DslMarker
-annotation class DockerFileDsl
+annotation class DockerfileDsl
 
-@DockerFileDsl
+@DockerfileDsl
 sealed class DockerfileStep(
     val markerName: String,
 ) {
     abstract fun getArgs(): List<String>
+
+    override fun toString(): String = "$markerName ${getArgs().joinToString(" ")}"
 }
 
 // Based on https://docs.docker.com/engine/reference/builder
@@ -166,11 +168,13 @@ class From : DockerfileStep("FROM") {
     var `as`: String? = null
 
     override fun getArgs(): List<String> {
-        val args = mutableListOf(image)
+        val args = mutableListOf<String>()
 
         if (platform != null) {
             args.add("--platform=$platform")
         }
+
+        args.add(image)
 
         if (`as` != null) {
             args.add("AS")
@@ -193,7 +197,7 @@ class Healthcheck : DockerfileStep("HEALTHCHECK") {
     fun cmd(vararg params: String) = __cmd.addAll(params)
 
     override fun getArgs(): List<String> {
-        val args = mutableListOf("HEALTHCHECK")
+        val args = mutableListOf<String>()
 
         args.add("--interval=${interval.inWholeSeconds}s")
         args.add("--timeout=${timeout.inWholeSeconds}s")
@@ -201,6 +205,7 @@ class Healthcheck : DockerfileStep("HEALTHCHECK") {
         args.add("--start-interval=${startInterval.inWholeSeconds}s")
         args.add("--retries=$retries")
 
+        args.add("CMD")
         args.addAll(__cmd)
 
         return args
@@ -230,6 +235,8 @@ class Shell : DockerfileStep("SHELL") {
     var commands: List<String> = emptyList()
 
     override fun getArgs(): List<String> = commands
+
+    override fun toString(): String = """SHELL [${commands.joinToString(", ") { '"' + it + '"' }}]"""
 }
 
 class StopSignal : DockerfileStep("STOPSIGNAL") {
@@ -268,13 +275,21 @@ class Space : DockerfileStep("") {
     override fun getArgs(): List<String> = emptyList()
 }
 
-@DockerFileDsl
-class Dockerfile {
+@DockerfileDsl
+open class Dockerfile {
+    var name = "Dockerfile"
+
     private var steps: MutableList<DockerfileStep> = mutableListOf()
 
     // Begin base commands
 
     fun add(init: Add.() -> Unit) = steps.add(Add().apply(init))
+
+    fun add(closure: groovy.lang.Closure<Add>) =
+        add {
+            closure.delegate = this
+            closure.call()
+        }
 
     infix fun arg(name: String) = steps.add(Arg().apply { this.name = name })
 
@@ -292,6 +307,12 @@ class Dockerfile {
 
     fun copy(init: Copy.() -> Unit) = steps.add(Copy().apply(init))
 
+    fun copy(closure: groovy.lang.Closure<Copy>) =
+        copy {
+            closure.delegate = this
+            closure.call()
+        }
+
     fun entryPoint(vararg params: String) = steps.add(EntryPoint().apply { this.params = params.toList() })
 
     fun env(
@@ -304,15 +325,19 @@ class Dockerfile {
         },
     )
 
+    fun expose(port: Int) = expose(port, TCP)
+
     fun expose(
         port: Int,
-        protocol: Protocol = TCP,
+        protocol: Protocol,
     ) = steps.add(
         Expose().apply {
             this.port = port
             this.protocol = protocol
         },
     )
+
+    fun from(image: String) = from(image, null, null)
 
     fun from(
         image: String,
@@ -328,6 +353,12 @@ class Dockerfile {
 
     fun healthcheck(init: Healthcheck.() -> Unit) = steps.add(Healthcheck().apply(init))
 
+    fun healthcheck(closure: groovy.lang.Closure<Healthcheck>) =
+        healthcheck {
+            closure.delegate = this
+            closure.call()
+        }
+
     fun label(
         name: String,
         value: String,
@@ -335,7 +366,13 @@ class Dockerfile {
 
     fun maintainer(value: String) = steps.add(Maintainer().apply { this.name = value })
 
-    fun onBuild(init: Dockerfile.() -> Unit) {}
+    fun onBuild(init: Dockerfile.() -> Unit) = Dockerfile().apply(init)
+
+    fun onBuild(closure: groovy.lang.Closure<Dockerfile>) =
+        onBuild {
+            closure.delegate = this
+            closure.call()
+        }
 
     fun run(vararg commands: String) = steps.add(Run().apply { this.commands = commands.toList() })
 
@@ -353,9 +390,10 @@ class Dockerfile {
     // Begin extensions
 
     // Add comments
-    operator fun String.unaryPlus() {
-        steps.add(Comment().apply { this.comment = this@unaryPlus })
-    }
+
+    fun comment(value: String) = steps.add(Comment().apply { this.comment = value })
+
+    operator fun String.unaryPlus() = comment(this)
 
     // Add spaces
     fun lines(count: Int) {
@@ -365,10 +403,7 @@ class Dockerfile {
     }
     // End extensions
 
-    fun parse(): List<String> =
-        steps.map {
-            "${it.markerName} ${it.getArgs().joinToString(" ")}"
-        }
+    fun parse(): List<String> = steps.map { it.toString() }
 }
 
-fun dockerfile(init: Dockerfile.() -> Unit) = Dockerfile().apply(init)
+internal fun dockerfile(init: Dockerfile.() -> Unit) = Dockerfile().apply(init)

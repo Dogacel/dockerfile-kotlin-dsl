@@ -1,0 +1,46 @@
+plugins {
+    id("org.jetbrains.kotlin.jvm") version "1.9.23"
+
+    id("io.github.dogacel.dsl.dockerfile")
+}
+
+repositories {
+    mavenCentral()
+}
+
+dockerfile {
+    from("openjdk:21-jdk-slim")
+    workdir("/app")
+
+    comment("Copy the JAR file into the Docker Image")
+    copy {
+        source = "app.jar"
+        destination = "/app/app.jar"
+    }
+
+    comment("Download assets")
+
+    def assetPath = "full_assets.zip"
+    switch (System.env["MODE"]) {
+        case "local":
+            assetPath = "first_100_assets.zip"
+            break
+
+        case "staging":
+            assetPath = "compressed_assets.zip"
+            break
+    }
+
+    run("curl", "-o", "assets.zip", "https://example.com/$assetPath")
+    run("unzip", "assets.zip", "-d", "/app/assets", "&&", "rm", "assets.zip")
+
+    switch (System.env["MODE"]) {
+        case "local":
+            expose(80)
+            break
+    }
+
+    expose(443)
+
+    cmd("java", "-jar", "app.jar")
+}

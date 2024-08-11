@@ -3,7 +3,8 @@ plugins {
     `java-gradle-plugin`
 
     // Apply the Kotlin JVM plugin to add support for Kotlin.
-    alias(libs.plugins.jvm)
+//    alias(libs.plugins.jvm)
+    kotlin("jvm") version "1.9.23"
 }
 
 repositories {
@@ -22,7 +23,7 @@ gradlePlugin {
     // Define the plugin
     val greeting by plugins.creating {
         id = "io.github.dogacel.dsl.dockerfile"
-        implementationClass = "io.github.dogacel.dsl.KotlinDockerfileDslPlugin"
+        implementationClass = "io.github.dogacel.dsl.dockerfile.DockerfileDslPlugin"
     }
 }
 
