@@ -1,5 +1,7 @@
-package org.example
+package io.github.dogacel.dockerfiledsl
 
+import io.github.dogacel.dockerfiledsl.Expose.Protocol
+import io.github.dogacel.dockerfiledsl.Expose.Protocol.TCP
 import java.util.Locale
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
@@ -153,7 +155,7 @@ class Expose : DockerfileStep("EXPOSE") {
     }
 
     var port: Int = 0
-    var protocol: Protocol = Protocol.TCP
+    var protocol: Protocol = TCP
 
     override fun getArgs(): List<String> = listOf("$port/${protocol.name.lowercase(Locale.US)}")
 }
@@ -304,7 +306,7 @@ class Dockerfile {
 
     fun expose(
         port: Int,
-        protocol: Expose.Protocol = Expose.Protocol.TCP,
+        protocol: Protocol = TCP,
     ) = steps.add(
         Expose().apply {
             this.port = port

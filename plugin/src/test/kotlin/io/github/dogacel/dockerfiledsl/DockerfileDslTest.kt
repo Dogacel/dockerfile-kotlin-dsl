@@ -1,5 +1,6 @@
-package org.example
+package io.github.dogacel.dockerfiledsl
 
+import io.github.dogacel.dockerfiledsl.Expose.Protocol.UDP
 import kotlin.test.Test
 import kotlin.time.Duration.Companion.seconds
 
@@ -40,7 +41,7 @@ class DockerfileDslTest {
                 env("JAVA_OPTS", "-Xmx512m")
 
                 expose(80)
-                expose(8080, Expose.Protocol.UDP)
+                expose(8080, UDP)
 
                 from("openjdk:8-jdk-alpine")
                 from("openjdk:8-jdk-alpine", "linux/amd64", "builder")
