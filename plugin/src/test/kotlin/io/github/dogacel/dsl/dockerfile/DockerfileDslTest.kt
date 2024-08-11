@@ -1,6 +1,6 @@
-package io.github.dogacel.dockerfiledsl
+package io.github.dogacel.dsl.dockerfile
 
-import io.github.dogacel.dockerfiledsl.Expose.Protocol.UDP
+import io.github.dogacel.dsl.dockerfile.Expose.Protocol.UDP
 import kotlin.test.Test
 import kotlin.time.Duration.Companion.seconds
 

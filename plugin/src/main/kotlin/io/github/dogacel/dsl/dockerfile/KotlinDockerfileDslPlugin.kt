@@ -1,4 +1,4 @@
-package io.github.dogacel.dockerfiledsl
+package io.github.dogacel.dsl.dockerfile
 
 import org.gradle.api.Plugin
 import org.gradle.api.Project
