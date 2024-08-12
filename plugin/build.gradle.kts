@@ -3,8 +3,25 @@ plugins {
     `java-gradle-plugin`
 
     // Apply the Kotlin JVM plugin to add support for Kotlin.
-//    alias(libs.plugins.jvm)
     kotlin("jvm") version "1.9.23"
+    id("com.gradle.plugin-publish") version "1.2.1"
+}
+
+group = "io.github.dogacel"
+version = "0.0.1"
+
+gradlePlugin {
+    website = "https://github.com/Dogacel/dockerfile-kotlin-dsl"
+    vcsUrl = "https://github.com/Dogacel/dockerfile-kotlin-dsl.git"
+    plugins {
+        create("dockerfileKotlinDslPlugin") {
+            id = "io.github.dogacel.dsl.dockerfile"
+            displayName = "Dockerfile Kotlin DSL"
+            description = "Streamlined Dockerfile generation using Kotlin DSL inside Gradle build scripts."
+            tags = listOf("docker", "dockerfile", "kotlin", "dsl", "build", "config")
+            implementationClass = "io.github.dogacel.dsl.dockerfile.DockerfileDslPlugin"
+        }
+    }
 }
 
 repositories {
@@ -17,14 +34,6 @@ dependencies {
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
 
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-}
-
-gradlePlugin {
-    // Define the plugin
-    val greeting by plugins.creating {
-        id = "io.github.dogacel.dsl.dockerfile"
-        implementationClass = "io.github.dogacel.dsl.dockerfile.DockerfileDslPlugin"
-    }
 }
 
 // Add a source set for the functional test suite
